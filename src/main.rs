@@ -1,4 +1,6 @@
-use crate::syntax::{Exp, TCompute, TVal, Terminal};
+use riddle_compiler::syntax::{ExpCompute, ExpVal};
+use riddle_compiler::parser::{ComputationParser, ValueParser};
 fn main() {
-    println!("Hello, world!");
+    
+    println!("{:?}", ComputationParser::new().parse("return (0, (true, in1 { return 4 }))"));
 }
