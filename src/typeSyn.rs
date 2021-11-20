@@ -21,14 +21,16 @@ pub fn typeSynVal<'exp>(
             Ok(tc) => Ok(TVal::Thunk(Box::new(tc))),
             Err(s) => Err(s),
         },
-        ExpVal::Sum(l, r, _) => match (typeSynVal(l, gamma), typeSynVal(r, gamma)) {
-            (Ok(tvl), Ok(tvr)) => Ok(TVal::Sum(Box::new(tvl), Box::new(tvr))),
-            _ => Err(format!("Sum Type Error")),
-        },
+        // ExpVal::Sum(l, r, _) => match (typeSynVal(l, gamma), typeSynVal(r, gamma)) {
+        //     (Ok(tvl), Ok(tvr)) => Ok(TVal::Sum(Box::new(tvl), Box::new(tvr))),
+        //     _ => Err(format!("Sum Type Error")),
+        // },
         ExpVal::Prod(l, r, _) => match (typeSynVal(l, gamma), typeSynVal(r, gamma)) {
             (Ok(tvl), Ok(tvr)) => Ok(TVal::Prod(Box::new(tvl), Box::new(tvr))),
             _ => Err(format!("Sum Type Error")),
         },
+        ExpVal::Sum(_, _, _) => todo!(),
+        
     }
 }
 
@@ -50,22 +52,23 @@ pub fn typeSynCompute<'exp>(
             return typeSynCompute(body, &new_gamma);
         }
         ExpCompute::To {
-            bindings,
+            binding,
             body,
             ann,
         } => {
-            let mut new_gamma = gamma.clone();
-            for (x, v) in bindings.iter() {
-                match typeSynCompute(v, &new_gamma)? {
-                    TCompute::Returner(tv) => {
-                        new_gamma.push((x, *tv));
-                    }
-                    _ => {
-                        return Err(format!("To Type Error!"));
-                    }
-                }
-            }
-            return typeSynCompute(body, &new_gamma);
+            todo!();
+            // let mut new_gamma = gamma.clone();
+            // for (x, v) in bindings.iter() {
+            //     match typeSynCompute(v, &new_gamma)? {
+            //         TCompute::Returner(tv) => {
+            //             new_gamma.push((x, *tv));
+            //         }
+            //         _ => {
+            //             return Err(format!("To Type Error!"));
+            //         }
+            //     }
+            // }
+            // return typeSynCompute(body, &new_gamma);
         }
         ExpCompute::Returner(ev, _) => {
             let tv = typeSynVal(ev, gamma)?;

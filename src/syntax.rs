@@ -17,7 +17,7 @@ pub enum ExpCompute<Ann> {
         ann: Ann,
     }, //Computation
     To {
-        bindings: Vec<(String, ExpCompute<Ann>)>,
+        binding: (String, Box<ExpCompute<Ann>>), // Change this to one binding at a time
         body: Box<ExpCompute<Ann>>,
         ann: Ann,
     }, //Computation
@@ -25,7 +25,6 @@ pub enum ExpCompute<Ann> {
     Force(Box<ExpVal<Ann>>, Ann),    // Computation
     PmSum {
         subject: Box<ExpVal<Ann>>,
-        // direction: bool, // TODO: Is this Needed?
         branch1: (String, Box<ExpCompute<Ann>>),
         branch2: (String, Box<ExpCompute<Ann>>),
         ann: Ann,
@@ -98,22 +97,12 @@ pub enum Exp<Ann> {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Terminal {
-    Return(Box<Val>),
+    Return(Box<ExpVal<()>>),
     Pop(String, Box<ExpCompute<()>>),
     CoPm {
         branch1: Box<ExpCompute<()>>,
         branch2: Box<ExpCompute<()>>,
     },
-}
-
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Val{
-    Num(i64),                               // Val
-    Bool(bool),                               // Val
-    Thunk(Box<ExpCompute<()>>),              // Val
-    Sum(Box<Val>, Box<Val>),  // Val
-    Prod(Box<Val>, Box<Val>), // Val
 }
 
 
@@ -160,7 +149,10 @@ pub enum TCompute {
 
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-enum Stack{
-    Arg()
+pub enum Stack<Ann>{
+    Arg(ExpVal<Ann>, Box<Stack<Ann>>, Ann),
+    Prj(bool, Box<Stack<Ann>>, Ann),
+    cont(String, ExpCompute<Ann>, Box<Stack<Ann>>, Ann), 
+    End(Ann),
 }
 
