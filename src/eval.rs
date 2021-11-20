@@ -672,3 +672,41 @@ pub fn eval_with_stack(e: &ExpCompute<()>) -> Result<Terminal, String> {
     }
     todo!();
 }
+
+
+
+#[cfg(test)]
+mod eval_tests {
+    use super::*;
+    #[test]
+    fn eval_test0(){
+        let e1: ExpCompute<()> = ExpCompute::Let {
+            bindings: vec![
+                (String::from("x"), ExpVal::Num(3, ())),
+                (String::from("y"), ExpVal::Var(String::from("z"), ())),
+            ],
+            body: Box::new(ExpCompute::Prim2(
+                Prim2::Add,
+                Box::new(ExpVal::Var(String::from("x"), ())),
+                Box::new(ExpVal::Var(String::from("y"), ())),
+                (),
+            )),
+            ann: (),
+        };
+        let e2 = substCompute(e1.clone(), &String::from("z"), ExpVal::Num(3, ()));
+        assert_eq!(eval(&e2), Ok(Terminal::Return(Box::new(ExpVal::Num(6,())))));
+        assert_eq!(eval_with_stack(&e2), Ok(Terminal::Return(Box::new(ExpVal::Num(6,())))));
+        let e3 = ExpCompute::To {
+            binding: (String::from("x"), Box::new(e2.clone())),
+            body: Box::new(ExpCompute::Prim2(
+                Prim2::Sub,
+                Box::new(ExpVal::Var(String::from("x"), ())),
+                Box::new(ExpVal::Num(3, ())),
+                (),
+            )),
+            ann: (),
+        };
+        assert_eq!(eval(&e3), Ok(Terminal::Return(Box::new(ExpVal::Num(3,())))));
+        assert_eq!(eval_with_stack(&e3), Ok(Terminal::Return(Box::new(ExpVal::Num(3,())))));
+    }
+}
