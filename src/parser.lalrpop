@@ -1,0 +1,50 @@
+use std::str::FromStr;
+use crate::syntax::{ExpVal, ExpCompute, TVal};
+
+grammar;
+
+pub Computation: Box<ExpCompute<()>> = Boxed<Comp>;
+
+Comp: ExpCompute<()> = {
+    "return" <v:Value> => ExpCompute::Returner(v, ()),
+    "let" <v: Value> "be" <x: Id> "." <m: Computation> => ExpCompute::Let { bindings: vec![(x, *v)], body: m, ann: () },
+    "bind" <m: Computation> "to" <x: Id> "." <n: Computation> => ExpCompute::To { bindings: vec![(x, *m)], body: n, ann: () },
+    "!" <v: Value> => ExpCompute::Force(v, ()),
+    "pm" <subject: Value> "{" "in1" <var1: Id> "." <m1: Computation> "|" "in2" <var2: Id> "." <m2: Computation> "}" => ExpCompute::PmSum { subject, branch1: (var1, m1), branch2: (var2, m2), ann: () },
+    "pm" <subject: Value> "{" "(" <left: Id> "," <right: Id> ")" "." <body: Computation>  "}" => ExpCompute::PmPair { subject, left, right, body, ann: () },
+    "copm" "{" "prj1" "." <branch1: Computation> "|" "prj2" "." <branch2: Computation> "}" => ExpCompute::CoPm { branch1, branch2, ann: () },
+    <b: PRJ> <m: Computation> => ExpCompute::Proj(b, m, ()),
+    "copm" "{" <x:Id> "." <m: Computation> "}" => ExpCompute::Pop(x, TVal::Unit, m, ()),
+    <v: Value> "'" <m: Computation> => ExpCompute::Push(v, m, ()),
+}
+
+Boxed<T> : Box<T> = {
+  T => Box::new(<>)
+}
+
+pub Value: Box<ExpVal<()>> = Boxed<Val>;
+
+Val: ExpVal<()> = {
+    Num => ExpVal::Num(<>, ()),
+    Bool => ExpVal::Bool(<>, ()),
+    Id => ExpVal::Var(<>, ()),
+    "{" <m: Computation>  "}" => ExpVal::Thunk(m, ()),
+    <b: INJ> <v: Value> => ExpVal::Sum(b, v, ()),
+    "(" <v1: Value> "," <v2: Value> ")" => ExpVal::Prod(v1, v2, ())
+}
+
+Num: i64 = <s:r"[+-]?[0-9]+"> => i64::from_str(s).unwrap();
+Id: String = <s:r"[a-zA-Z][a-zA-Z0-9_-]*"> => String::from(s);
+Bool: bool = {
+    "true" => true,
+    "false" => false,
+}
+INJ: bool = {
+    "in1" => true,
+    "in2" => false,
+}
+PRJ: bool = {
+    "prj1" => true,
+    "prj2" => false,
+}
+

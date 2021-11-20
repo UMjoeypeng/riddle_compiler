@@ -1,5 +1,5 @@
 #[macro_use] extern crate lalrpop_util;
-lalrpop_mod!(pub parser);
 pub mod syntax;
+lalrpop_mod!(pub parser);
 mod typeSyn;
 pub mod eval;
