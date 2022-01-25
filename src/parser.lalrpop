@@ -1,5 +1,5 @@
 use std::str::FromStr;
-use crate::syntax::{ExpVal, ExpCompute, TVal};
+use crate::syntax::{ExpVal, ExpCompute, TVal, Prim2};
 
 grammar;
 
@@ -16,6 +16,18 @@ Comp: ExpCompute<()> = {
     <b: PRJ> <m: Computation> => ExpCompute::Proj(b, m, ()),
     "copm" "{" <x:Id> "." <m: Computation> "}" => ExpCompute::Pop(x, TVal::Unit, m, ()),
     <v: Value> "'" <m: Computation> => ExpCompute::Push(v, m, ()),
+    "if" <cond:Value> "then" <thn: Computation> "else" <els: Computation> => ExpCompute::If{cond, thn, els},
+    <v1: Value> "+" <v2: Value> => ExpCompute::Prim2(Prim2::Add, v1, v2, ()),
+    <v1: Value> "-" <v2: Value> => ExpCompute::Prim2(Prim2::Sub, v1, v2, ()),
+    <v1: Value> "*" <v2: Value> => ExpCompute::Prim2(Prim2::Mul, v1, v2, ()),
+    <v1: Value> "&&" <v2: Value> => ExpCompute::Prim2(Prim2::And, v1, v2, ()),
+    <v1: Value> "||" <v2: Value> => ExpCompute::Prim2(Prim2::Or, v1, v2, ()),
+    <v1: Value> "<" <v2: Value> => ExpCompute::Prim2(Prim2::Lt, v1, v2, ()),
+    <v1: Value> ">" <v2: Value> => ExpCompute::Prim2(Prim2::Gt, v1, v2, ()),
+    <v1: Value> "<=" <v2: Value> => ExpCompute::Prim2(Prim2::Le, v1, v2, ()),
+    <v1: Value> ">=" <v2: Value> => ExpCompute::Prim2(Prim2::Ge, v1, v2, ()),
+    <v1: Value> "==" <v2: Value> => ExpCompute::Prim2(Prim2::Eq, v1, v2, ()),
+    <v1: Value> "!=" <v2: Value> => ExpCompute::Prim2(Prim2::Neq, v1, v2, ()),
 }
 
 Boxed<T> : Box<T> = {

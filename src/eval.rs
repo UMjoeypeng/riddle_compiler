@@ -32,6 +32,7 @@ pub fn substVal(e: ExpVal<()>, x: &str, v: ExpVal<()>) -> ExpVal<()> {
 }
 
 pub fn substCompute(e: ExpCompute<()>, x: &str, v: ExpVal<()>) -> ExpCompute<()> {
+    // println!("subst {} with {:?} \n", x, v);
     match e {
         ExpCompute::Let {
             bindings,
@@ -57,7 +58,8 @@ pub fn substCompute(e: ExpCompute<()>, x: &str, v: ExpVal<()>) -> ExpCompute<()>
             if x == y {
                 return ExpCompute::To {
                     binding: (y, val),
-                    body: Box::new(substCompute(*body, x.clone(), v.clone())),
+                    // body: Box::new(substCompute(*body, x.clone(), v.clone())),
+                    body: body,
                     ann: (),
                 };
             } else {
@@ -192,6 +194,13 @@ pub fn substCompute(e: ExpCompute<()>, x: &str, v: ExpVal<()>) -> ExpCompute<()>
                 (),
             );
         }
+        ExpCompute::If { cond, thn, els } => {
+            return ExpCompute::If {
+                cond: Box::new(substVal(*cond, x.clone(), v.clone())),
+                thn: Box::new(substCompute(*thn, x.clone(), v.clone())),
+                els: Box::new(substCompute(*els, x.clone(), v.clone())),
+            };
+        }
     }
 }
 
@@ -267,6 +276,7 @@ pub fn eval(e: &ExpCompute<()>) -> Result<Terminal, String> {
                 return eval(&u);
             }
             _ => {
+                // println!("{:?}", e);
                 return Err(format!("Error: Eval Force error"));
             }
         },
@@ -411,14 +421,37 @@ pub fn eval(e: &ExpCompute<()>) -> Result<Terminal, String> {
                 }
             },
         },
+        ExpCompute::If { cond, thn, els } => match &**cond {
+            ExpVal::Bool(b, _) => {
+                if *b {
+                    return eval(thn);
+                } else {
+                    return eval(els);
+                }
+            }
+            _ => {
+                return Err(format!("Error: Eval If error"));
+            }
+        },
     }
 }
 
 pub fn eval_with_stack(e: &ExpCompute<()>) -> Result<Terminal, String> {
     let mut compute = e.clone();
     let mut stack = Stack::End(());
+    let mut count = 0;
     loop {
-        // println!("compute: {:?}",&compute);
+        // count = count + 1;
+        // if (count < 50) {
+        //     // println!("compute: {:?}\n", &compute);
+        //     // println!("stack: {:?}\n", &stack);
+        // } else {
+        //     panic!("Stop");
+        // }
+        // if (count >= 15){
+        //     println!("compute: {:?}\n", &compute);
+        // }
+
         match compute.clone() {
             ExpCompute::Let {
                 bindings,
@@ -430,12 +463,7 @@ pub fn eval_with_stack(e: &ExpCompute<()>) -> Result<Terminal, String> {
                     compute = substCompute(compute, x, val.clone());
                 }
             }
-            ExpCompute::To {
-                binding,
-                body,
-                ann,
-            } => {
-                
+            ExpCompute::To { binding, body, ann } => {
                 let (x, e) = binding;
                 stack = Stack::cont(x.to_string(), *body.clone(), Box::new(stack), ());
                 compute = *e.clone();
@@ -536,6 +564,7 @@ pub fn eval_with_stack(e: &ExpCompute<()>) -> Result<Terminal, String> {
             }
             ExpCompute::Pop(x, t, e, _) => match stack {
                 Stack::Arg(ref v, ref s, _) => {
+                    println!("count:{}\n{}:{:?}\n\ncompute:{:?}\n", count, x, v, e);
                     compute = substCompute(*e, &x, v.clone());
                     stack = *s.clone();
                 }
@@ -585,6 +614,7 @@ pub fn eval_with_stack(e: &ExpCompute<()>) -> Result<Terminal, String> {
                                 ExpCompute::Returner(Box::new(ExpVal::Bool(n1 >= n2, ())), ());
                         }
                         Prim2::Eq => {
+                            // println!("{},{}", n1, n2);
                             compute =
                                 ExpCompute::Returner(Box::new(ExpVal::Bool(n1 == n2, ())), ());
                         }
@@ -621,6 +651,18 @@ pub fn eval_with_stack(e: &ExpCompute<()>) -> Result<Terminal, String> {
                         return Err(format!("Error: Eval Boolean Algebra error"));
                     }
                 },
+            },
+            ExpCompute::If { cond, thn, els } => match *cond {
+                ExpVal::Bool(b, _) => {
+                    if b {
+                        compute = *thn;
+                    } else {
+                        compute = *els;
+                    }
+                }
+                _ => {
+                    return Err(format!("Error: Eval If error"));
+                }
             },
         }
 
@@ -670,16 +712,70 @@ pub fn eval_with_stack(e: &ExpCompute<()>) -> Result<Terminal, String> {
         //     },
         // }
     }
-    todo!();
 }
 
+fn printStack(s: Stack<()>) {
+    match s {
+        Stack::Arg(e, s, _) => {}
+        Stack::Prj(b, s, _) => todo!(),
+        Stack::cont(v, c, s, _) => todo!(),
+        Stack::End(_) => todo!(),
+    }
+}
+fn printVal(v: ExpVal<()>) -> String {
+    match v {
+        ExpVal::Num(n, _) => format!("{}", n),
+        ExpVal::Bool(b, _) => format!("{}", b),
+        ExpVal::Var(v, _) => format!("{}", v),
+        ExpVal::Thunk(c, _) => format!("{:?}", printCompute(*c)),
+        ExpVal::Sum(d, v, _) => {
+            todo!();
+        }
+        ExpVal::Prod(_, _, _) => todo!(),
+    }
+}
 
+fn printCompute(c: ExpCompute<()>) -> String {
+    match c {
+        ExpCompute::Let {
+            bindings,
+            body,
+            ann,
+        } => todo!(),
+        ExpCompute::If { cond, thn, els } => todo!(),
+        ExpCompute::To { binding, body, ann } => todo!(),
+        ExpCompute::Returner(_, _) => todo!(),
+        ExpCompute::Force(_, _) => todo!(),
+        ExpCompute::PmSum {
+            subject,
+            branch1,
+            branch2,
+            ann,
+        } => todo!(),
+        ExpCompute::PmPair {
+            subject,
+            left,
+            right,
+            body,
+            ann,
+        } => todo!(),
+        ExpCompute::CoPm {
+            branch1,
+            branch2,
+            ann,
+        } => todo!(),
+        ExpCompute::Proj(_, _, _) => todo!(),
+        ExpCompute::Pop(_, _, _, _) => todo!(),
+        ExpCompute::Push(_, _, _) => todo!(),
+        ExpCompute::Prim2(_, _, _, _) => todo!(),
+    }
+}
 
 #[cfg(test)]
 mod eval_tests {
     use super::*;
     #[test]
-    fn eval_test0(){
+    fn eval_test0() {
         let e1: ExpCompute<()> = ExpCompute::Let {
             bindings: vec![
                 (String::from("x"), ExpVal::Num(3, ())),
@@ -694,8 +790,14 @@ mod eval_tests {
             ann: (),
         };
         let e2 = substCompute(e1.clone(), &String::from("z"), ExpVal::Num(3, ()));
-        assert_eq!(eval(&e2), Ok(Terminal::Return(Box::new(ExpVal::Num(6,())))));
-        assert_eq!(eval_with_stack(&e2), Ok(Terminal::Return(Box::new(ExpVal::Num(6,())))));
+        assert_eq!(
+            eval(&e2),
+            Ok(Terminal::Return(Box::new(ExpVal::Num(6, ()))))
+        );
+        assert_eq!(
+            eval_with_stack(&e2),
+            Ok(Terminal::Return(Box::new(ExpVal::Num(6, ()))))
+        );
         let e3 = ExpCompute::To {
             binding: (String::from("x"), Box::new(e2.clone())),
             body: Box::new(ExpCompute::Prim2(
@@ -706,7 +808,13 @@ mod eval_tests {
             )),
             ann: (),
         };
-        assert_eq!(eval(&e3), Ok(Terminal::Return(Box::new(ExpVal::Num(3,())))));
-        assert_eq!(eval_with_stack(&e3), Ok(Terminal::Return(Box::new(ExpVal::Num(3,())))));
+        assert_eq!(
+            eval(&e3),
+            Ok(Terminal::Return(Box::new(ExpVal::Num(3, ()))))
+        );
+        assert_eq!(
+            eval_with_stack(&e3),
+            Ok(Terminal::Return(Box::new(ExpVal::Num(3, ()))))
+        );
     }
 }

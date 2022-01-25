@@ -9,6 +9,8 @@ pub fn lookup(gamma: &Vec<(&str, TVal)>, x: &str) -> Result<TVal, String> {
     Err(format!("{} is not defined", x))
 }
 
+
+
 pub fn typeSynVal<'exp>(
     e: &'exp ExpVal<()>,
     mut gamma: &Vec<(&'exp str, TVal)>,
@@ -27,10 +29,14 @@ pub fn typeSynVal<'exp>(
         // },
         ExpVal::Prod(l, r, _) => match (typeSynVal(l, gamma), typeSynVal(r, gamma)) {
             (Ok(tvl), Ok(tvr)) => Ok(TVal::Prod(Box::new(tvl), Box::new(tvr))),
-            _ => Err(format!("Sum Type Error")),
+            _ => Err(format!("Prod Type Error")),
         },
-        ExpVal::Sum(_, _, _) => todo!(),
-        
+        ExpVal::Sum(b, v, _) => {
+            match typeSynVal(v, gamma){
+                Ok(tv) => Ok(TVal::Sum(Box::new(tv), Box::new(TVal::Top))),
+                Err(_) => Err(format!("Sum Type Error")),
+            }
+        },
     }
 }
 
@@ -161,9 +167,10 @@ pub fn typeSynCompute<'exp>(
         },
         ExpCompute::Pop(x, tv, e, _) => {
             // Need declare input type explicitly
-            let mut new_gamma = gamma.clone();
-            new_gamma.push((x, (*tv).clone()));
-            return typeSynCompute(e, &new_gamma);
+            // let mut new_gamma = gamma.clone();
+            // new_gamma.push((x, (*tv).clone()));
+            // return typeSynCompute(e, &new_gamma);
+            todo!();
         }
         ExpCompute::Push(ev, ec, _) => {
             let tv = typeSynVal(ev, gamma)?;
@@ -235,5 +242,6 @@ pub fn typeSynCompute<'exp>(
                 }
             },
         },
+        ExpCompute::If { cond, thn, els } => todo!(),
     }
 }

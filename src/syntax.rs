@@ -11,11 +11,17 @@ pub enum ExpVal<Ann> {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ExpCompute<Ann> {
+    // TODO: Do we need if else for Compute
     Let {
         bindings: Vec<(String, ExpVal<Ann>)>,
         body: Box<ExpCompute<Ann>>,
         ann: Ann,
     }, //Computation
+    If {
+        cond: Box<ExpVal<Ann>>, 
+        thn: Box<ExpCompute<Ann>>,
+        els: Box<ExpCompute<Ann>>,
+    },
     To {
         binding: (String, Box<ExpCompute<Ann>>), // Change this to one binding at a time
         body: Box<ExpCompute<Ann>>,
@@ -137,6 +143,7 @@ pub enum TVal {
     Prod(Box<TVal>, Box<TVal>),
     Sum(Box<TVal>, Box<TVal>),
     Empty, //
+    Top,
 }
 
 
